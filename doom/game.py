@@ -89,15 +89,19 @@ class Game:
     def load_level(self, index, carry_player=True):
         self.level_index = index
         self._install_level(parse_level(LEVELS[index]["rows"]),
-                            LEVELS[index]["name"], carry_player)
+                            LEVELS[index]["name"], carry_player,
+                            C.difficulty_for(index))
 
-    def load_custom(self, rows, name="Test", carry_player=False):
+    def load_custom(self, rows, name="Test", carry_player=False, difficulty=None):
         """Load an arbitrary ASCII map.  Used by the tests to build tiny,
-        fully-controlled worlds; ``level_index`` is left untouched."""
-        self._install_level(parse_level(rows), name, carry_player)
+        fully-controlled worlds; ``level_index`` is left untouched and monsters
+        spawn at neutral difficulty unless one is supplied."""
+        self._install_level(parse_level(rows), name, carry_player,
+                            difficulty or C.NEUTRAL_DIFFICULTY)
 
-    def _install_level(self, level, name, carry_player):
+    def _install_level(self, level, name, carry_player, difficulty):
         self.level_name = name
+        self.difficulty = difficulty
         self.grid = level["grid"]
         self.width = level["width"]
         self.height = level["height"]
@@ -122,7 +126,8 @@ class Game:
                 if self.grid[y][x] in C.DOOR_TILES:
                     self.doors[(x, y)] = Door(self.grid[y][x])
 
-        self.monsters = [Monster(mt, mx, my) for (mt, mx, my) in level["monsters"]]
+        self.monsters = [Monster(mt, mx, my, difficulty)
+                         for (mt, mx, my) in level["monsters"]]
         self.items = [Item(kind, ix, iy) for (kind, ix, iy) in level["items"]]
         self.projectiles = []
         self.level_monsters = len(self.monsters)

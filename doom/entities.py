@@ -10,6 +10,12 @@ import math
 from . import constants as C
 
 
+def _scale_range(rng, mult):
+    """Scale a (lo, hi) damage range by ``mult``, keeping at least 1."""
+    lo, hi = rng
+    return (max(1, round(lo * mult)), max(1, round(hi * mult)))
+
+
 class Player:
     def __init__(self, x, y, angle=0.0):
         self.x = x
@@ -92,9 +98,18 @@ class Player:
 class Monster:
     STATES = ("idle", "chase", "attack", "pain", "dead")
 
-    def __init__(self, mtype, x, y):
+    def __init__(self, mtype, x, y, difficulty=None):
         self.type = mtype
-        cfg = C.MONSTERS[mtype]
+        # Work on a private copy so per-level difficulty scaling never mutates
+        # the shared constant table.
+        cfg = dict(C.MONSTERS[mtype])
+        scale = difficulty or C.NEUTRAL_DIFFICULTY
+        cfg["health"] = max(1, round(cfg["health"] * scale["health"]))
+        cfg["speed"] = cfg["speed"] * scale["speed"]
+        cfg["attack_cooldown"] = cfg["attack_cooldown"] * scale["cooldown"]
+        cfg["damage"] = _scale_range(cfg["damage"], scale["damage"])
+        if "melee_damage" in cfg:
+            cfg["melee_damage"] = _scale_range(cfg["melee_damage"], scale["damage"])
         self.cfg = cfg
         self.x = x
         self.y = y

@@ -66,6 +66,32 @@ class TestGameFlow(unittest.TestCase):
         g.update(0.1, None)
         self.assertEqual((g.player.x, g.player.y), before)
 
+    def test_difficulty_ramps_between_levels(self):
+        g1 = Game(start_level=0)
+        g3 = Game(start_level=2)
+        d1 = next(m for m in g1.monsters if m.type == "demon")
+        d3 = next(m for m in g3.monsters if m.type == "demon")
+        # Level 3 demons are tougher, faster and hit harder than level 1's.
+        self.assertLess(d1.health, d3.health)
+        self.assertLess(d1.speed, d3.speed)
+        self.assertLess(d1.cfg["melee_damage"][1], d3.cfg["melee_damage"][1])
+        # ...and level 1 demons attack less often (longer cooldown).
+        self.assertGreater(d1.cfg["attack_cooldown"], d3.cfg["attack_cooldown"])
+
+    def test_level1_demon_is_easier_than_baseline(self):
+        g1 = Game(start_level=0)
+        d1 = next(m for m in g1.monsters if m.type == "demon")
+        base = C.MONSTERS["demon"]
+        self.assertLess(d1.health, base["health"])
+        self.assertLess(d1.speed, base["speed"])
+
+    def test_custom_map_uses_neutral_difficulty(self):
+        g = Game()
+        g.load_custom(["#####", "#Pd.#", "#####"])
+        demon = g.monsters[0]
+        self.assertEqual(demon.health, C.MONSTERS["demon"]["health"])
+        self.assertEqual(demon.speed, C.MONSTERS["demon"]["speed"])
+
     def test_weapon_switch_only_to_owned(self):
         g = Game()
         # Slot 3 is the shotgun, which the player does not own yet.

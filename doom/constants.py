@@ -88,6 +88,33 @@ MONSTERS = {
 MONSTER_MELEE_REACH = 1.2
 PROJECTILE_RADIUS = 0.25
 
+# ── Per-level difficulty ───────────────────────────────────────────────────────
+# Multipliers applied to every monster as it spawns, so the campaign ramps up.
+# ``cooldown`` multiplies the time BETWEEN attacks, so a value > 1 means the
+# monster attacks less often (easier).  Level 1 is deliberately gentle — which
+# disproportionately defangs the fast, hard-hitting pinky demon.
+NEUTRAL_DIFFICULTY = dict(health=1.0, speed=1.0, damage=1.0, cooldown=1.0)
+
+LEVEL_DIFFICULTY = [
+    dict(health=0.85, speed=0.80, damage=0.70, cooldown=1.40),  # L1 — gentle
+    dict(health=1.00, speed=1.00, damage=1.00, cooldown=1.00),  # L2 — baseline
+    dict(health=1.30, speed=1.20, damage=1.30, cooldown=0.80),  # L3 — brutal
+]
+
+
+def difficulty_for(level_index):
+    """Difficulty multipliers for a level, extrapolating past the last entry."""
+    if 0 <= level_index < len(LEVEL_DIFFICULTY):
+        return LEVEL_DIFFICULTY[level_index]
+    last = LEVEL_DIFFICULTY[-1]
+    extra = level_index - len(LEVEL_DIFFICULTY) + 1
+    return dict(
+        health=last["health"] + 0.20 * extra,
+        speed=last["speed"] + 0.10 * extra,
+        damage=last["damage"] + 0.20 * extra,
+        cooldown=max(0.40, last["cooldown"] - 0.10 * extra),
+    )
+
 # ── Weapons ────────────────────────────────────────────────────────────────────
 # ``cooldown`` is the minimum seconds between shots; ``pellets`` lets the shotgun
 # fire a spread; ``spread`` is the half-angle of random scatter in radians.
