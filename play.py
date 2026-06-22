@@ -147,7 +147,24 @@ class DoomApp:
         self.canvas.bind("<ButtonRelease-1>", lambda e: self.pressed.discard("fire"))
         self.canvas.bind("<Motion>", self._on_motion)
         # Releasing the OS focus (alt-tab etc.) should drop the mouse lock.
-        self.root.bind("<FocusOut>", lambda e: self._set_mouse_look(False))
+        self.root.bind("<FocusOut>", self._on_focus_out)
+
+    def _on_focus_out(self, e):
+        # Only release when focus truly left the application (not internal
+        # widget-to-widget focus shuffling), otherwise the lock would flicker.
+        if self.mouse_look and self.root.focus_displayof() is None:
+            self._set_mouse_look(False)
+
+    def _recenter_pointer(self):
+        """Warp the OS pointer back to the centre of the view, both axes."""
+        self._ignore_motion = True
+        try:
+            self.canvas.event_generate("<Motion>", warp=True,
+                                       x=WIDTH // 2, y=VIEW_H // 2)
+        except tk.TclError:
+            # Pointer warp not supported here — fall back to keyboard turning.
+            self.mouse_look = False
+            self.canvas.config(cursor="")
 
     def _set_mouse_look(self, on):
         """Lock/unlock mouse-look and reflect it in the cursor."""
@@ -158,10 +175,14 @@ class DoomApp:
         except tk.TclError:
             pass
         if on:
-            # Recentre so the first frame doesn't jump.
-            self._ignore_motion = True
-            self.canvas.event_generate("<Motion>", warp=True,
-                                       x=WIDTH // 2, y=VIEW_H // 2)
+            # Keep keyboard focus on us and pin the pointer to the centre so it
+            # can never reach a window edge (which is what let clicks fall onto
+            # other apps).
+            try:
+                self.canvas.focus_set()
+            except tk.TclError:
+                pass
+            self._recenter_pointer()
 
     def _on_click(self, e):
         # First click locks the mouse (like a browser pointer-lock); once locked
@@ -203,11 +224,10 @@ class DoomApp:
             self._ignore_motion = False
             return
         if self.mouse_look and self.state == DoomApp.PLAY:
-            cx = WIDTH // 2
-            self.mouse_dx += (e.x - cx)
-            # Re-centre the pointer so it never escapes the window.
-            self._ignore_motion = True
-            self.canvas.event_generate("<Motion>", warp=True, x=cx, y=e.y)
+            # Only the horizontal delta turns the player; both axes are then
+            # re-centred so the cursor stays pinned and never leaves the window.
+            self.mouse_dx += (e.x - WIDTH // 2)
+            self._recenter_pointer()
 
     def _collect_input(self, dt):
         p = self.pressed
