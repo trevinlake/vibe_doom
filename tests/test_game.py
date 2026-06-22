@@ -75,8 +75,10 @@ class TestGameFlow(unittest.TestCase):
         self.assertLess(d1.health, d3.health)
         self.assertLess(d1.speed, d3.speed)
         self.assertLess(d1.cfg["melee_damage"][1], d3.cfg["melee_damage"][1])
-        # ...and level 1 demons attack less often (longer cooldown).
+        # ...and level 1 demons attack less often (longer cooldown)...
         self.assertGreater(d1.cfg["attack_cooldown"], d3.cfg["attack_cooldown"])
+        # ...and notice the player from closer range (smaller sight).
+        self.assertLess(d1.cfg["sight"], d3.cfg["sight"])
 
     def test_level1_demon_is_easier_than_baseline(self):
         g1 = Game(start_level=0)

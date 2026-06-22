@@ -93,12 +93,14 @@ PROJECTILE_RADIUS = 0.25
 # ``cooldown`` multiplies the time BETWEEN attacks, so a value > 1 means the
 # monster attacks less often (easier).  Level 1 is deliberately gentle — which
 # disproportionately defangs the fast, hard-hitting pinky demon.
-NEUTRAL_DIFFICULTY = dict(health=1.0, speed=1.0, damage=1.0, cooldown=1.0)
+# ``sight`` scales how far a monster can first notice the player, so a low value
+# means enemies wake later and tend to be fought one at a time.
+NEUTRAL_DIFFICULTY = dict(health=1.0, speed=1.0, damage=1.0, cooldown=1.0, sight=1.0)
 
 LEVEL_DIFFICULTY = [
-    dict(health=0.85, speed=0.80, damage=0.70, cooldown=1.40),  # L1 — gentle
-    dict(health=1.00, speed=1.00, damage=1.00, cooldown=1.00),  # L2 — baseline
-    dict(health=1.30, speed=1.20, damage=1.30, cooldown=0.80),  # L3 — brutal
+    dict(health=0.65, speed=0.70, damage=0.50, cooldown=1.80, sight=0.60),  # L1 — easy
+    dict(health=1.00, speed=1.00, damage=1.00, cooldown=1.00, sight=1.00),  # L2 — baseline
+    dict(health=1.30, speed=1.20, damage=1.30, cooldown=0.80, sight=1.15),  # L3 — brutal
 ]
 
 
@@ -113,6 +115,7 @@ def difficulty_for(level_index):
         speed=last["speed"] + 0.10 * extra,
         damage=last["damage"] + 0.20 * extra,
         cooldown=max(0.40, last["cooldown"] - 0.10 * extra),
+        sight=min(1.5, last["sight"] + 0.10 * extra),
     )
 
 # ── Weapons ────────────────────────────────────────────────────────────────────

@@ -107,6 +107,7 @@ class Monster:
         cfg["health"] = max(1, round(cfg["health"] * scale["health"]))
         cfg["speed"] = cfg["speed"] * scale["speed"]
         cfg["attack_cooldown"] = cfg["attack_cooldown"] * scale["cooldown"]
+        cfg["sight"] = cfg["sight"] * scale.get("sight", 1.0)
         cfg["damage"] = _scale_range(cfg["damage"], scale["damage"])
         if "melee_damage" in cfg:
             cfg["melee_damage"] = _scale_range(cfg["melee_damage"], scale["damage"])
