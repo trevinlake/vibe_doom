@@ -143,9 +143,33 @@ class DoomApp:
         r = self.root
         r.bind("<KeyPress>", self._on_key_press)
         r.bind("<KeyRelease>", self._on_key_release)
-        self.canvas.bind("<Button-1>", lambda e: self.pressed.add("fire"))
+        self.canvas.bind("<Button-1>", self._on_click)
         self.canvas.bind("<ButtonRelease-1>", lambda e: self.pressed.discard("fire"))
         self.canvas.bind("<Motion>", self._on_motion)
+        # Releasing the OS focus (alt-tab etc.) should drop the mouse lock.
+        self.root.bind("<FocusOut>", lambda e: self._set_mouse_look(False))
+
+    def _set_mouse_look(self, on):
+        """Lock/unlock mouse-look and reflect it in the cursor."""
+        self.mouse_look = on
+        self.mouse_dx = 0.0
+        try:
+            self.canvas.config(cursor="none" if on else "")
+        except tk.TclError:
+            pass
+        if on:
+            # Recentre so the first frame doesn't jump.
+            self._ignore_motion = True
+            self.canvas.event_generate("<Motion>", warp=True,
+                                       x=WIDTH // 2, y=VIEW_H // 2)
+
+    def _on_click(self, e):
+        # First click locks the mouse (like a browser pointer-lock); once locked
+        # a click fires the weapon.
+        if self.state == DoomApp.PLAY and not self.mouse_look:
+            self._set_mouse_look(True)
+        else:
+            self.pressed.add("fire")
 
     def _on_key_press(self, e):
         k = e.keysym.lower()
@@ -157,12 +181,13 @@ class DoomApp:
             return
         if k == "escape":
             if self.state == DoomApp.PLAY:
+                self._set_mouse_look(False)     # release the mouse on pause
                 self.state = DoomApp.PAUSED
             elif self.state == DoomApp.PAUSED:
                 self.state = DoomApp.PLAY
             return
         if k == "m":
-            self.mouse_look = not self.mouse_look
+            self._set_mouse_look(not self.mouse_look)
             return
         if k in ("1", "2", "3", "4"):
             self.edge_slot = int(k)
@@ -237,9 +262,15 @@ class DoomApp:
             self._draw_title()
             return
 
+        # Drop the mouse lock automatically whenever we're not actively playing.
+        if self.mouse_look and (self.state != DoomApp.PLAY
+                                or self.game.mode != Game.PLAYING):
+            self._set_mouse_look(False)
+
         self._render_world()
         self._draw_weapon()
         self._draw_hud()
+        self._draw_mouse_hint()
 
         if self.state == DoomApp.PAUSED:
             self._draw_center_panel("PAUSED", "Press ESC to resume", (200, 200, 60))
@@ -248,6 +279,21 @@ class DoomApp:
         elif self.game.mode == Game.WON:
             self._draw_center_panel("VICTORY!", "All levels cleared — ENTER to replay",
                                     (60, 220, 90))
+
+    def _draw_mouse_hint(self):
+        if self.state != DoomApp.PLAY or self.game.mode != Game.PLAYING:
+            return
+        c = self.canvas
+        if not self.mouse_look:
+            c.create_rectangle(WIDTH / 2 - 150, VIEW_H - 40, WIDTH / 2 + 150,
+                               VIEW_H - 14, fill="#000000", stipple="gray50",
+                               width=0, tags="overlay")
+            c.create_text(WIDTH / 2, VIEW_H - 27,
+                          text="CLICK TO LOCK MOUSE   ·   M toggles   ·   ←/→ also turn",
+                          fill="#e0c040", font=self.font, tags="overlay")
+        else:
+            c.create_text(WIDTH - 14, 16, text="MOUSE LOCKED — ESC to release",
+                          fill="#9a9aa5", font=self.font, anchor="e", tags="overlay")
 
     def _hide_walls(self):
         for item in self.wall_items:
@@ -519,8 +565,8 @@ class DoomApp:
         c.create_text(WIDTH / 2, HEIGHT / 2 - 48, text="recreated by Claude Opus 4.8",
                       fill="#6a6a6a", font=self.font, tags="overlay")
         lines = [
-            "WASD move    ←/→ or mouse turn    M mouse-look",
-            "SPACE/CTRL fire    E use/open    1-4 weapons",
+            "WASD move    ←/→ turn    CLICK to lock mouse-look (M or ESC to release)",
+            "SPACE/CTRL/CLICK fire    E use/open    1-4 weapons",
             "Reach the green EXIT switch and USE it to advance.",
             "",
             "PRESS ENTER TO START",

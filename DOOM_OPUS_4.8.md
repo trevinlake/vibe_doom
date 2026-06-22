@@ -20,13 +20,18 @@ official Windows/macOS installers).
 | --- | --- |
 | `W` `S` | move forward / back |
 | `A` `D` | strafe left / right |
-| `←` `→` | turn (mouse also turns when locked) |
+| `←` `→` | turn |
+| **click** | **lock mouse-look** (browser-style); `M` or `Esc` releases it |
 | `M` | toggle mouse-look |
-| `Space` / `Ctrl` / left-click | fire |
+| `Space` / `Ctrl` / click (while locked) | fire |
 | `E` | use — open doors, hit the exit switch |
 | `1` `2` `3` `4` | fist / pistol / shotgun / chaingun |
-| `Esc` | pause |
+| `Esc` | pause (and release the mouse) |
 | `Enter` | start / restart |
+
+> **Mouse-look:** click the window to lock the pointer — the cursor hides and
+> the mouse turns you, just like a browser game. Press `M` or `Esc` to release.
+> You can always turn with the arrow keys without locking.
 
 **Goal:** clear the demons (or just survive), find the green **EXIT** switch on a
 wall, face it and press `E`. Some exits sit behind a locked door — grab the red
